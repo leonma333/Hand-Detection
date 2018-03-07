@@ -68,6 +68,14 @@ vector<vector<int>> drawHulls(vector<Point> contour) {
     return hullsI;
 }
 
+void drawRectEnclosingHand(Mat contour) {
+    RotatedRect rect = minAreaRect(contour);
+    Point2f rectPoints[4];
+    rect.points(rectPoints);
+    for(int i = 0; i < 4; i++)
+        line(currentFrame, rectPoints[i], rectPoints[(i+1)%4], Scalar(255, 0, 0), 1, 8);
+}
+
 /* ------------------------------- */
 
 int main(int argc, char *argv[]) {
@@ -89,59 +97,52 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < allContours.size(); i++) {
             if(contourArea(allContours[i]) >= CONTOUR_MIN_AREA_SIZE) {
                 vector<vector<Point>> currentCountour = drawHandOutline(allContours[i]);
-                
                 vector<vector<int>> hullsI = drawHulls(currentCountour[0]);
                 
-                // Find minimum area rectangle to enclose hand
-                RotatedRect rect = minAreaRect(Mat(currentCountour[0]));
-                
-                // Find Convex Defects
-                vector<Vec4i> defects;
                 if (hullsI[0].size() > 0) {
-                    // Draw rectangle enclosing hand
-                    Point2f rect_points[4];
-                    rect.points(rect_points);
-                    for(int j = 0; j < 4; j++)
-                        line(currentFrame, rect_points[j], rect_points[(j+1)%4], Scalar(255,0,0), 1, 8);
+                    drawRectEnclosingHand(Mat(currentCountour[0]));
                     
-                    Point rough_palm_center;
+                    vector<Vec4i> defects;
                     convexityDefects(currentCountour[0], hullsI[0], defects);
+                    
                     if(defects.size() >= 3) {
-                        vector<Point> palm_points;
-                        for(int j = 0;j < defects.size(); j++) {
-                            int startidx=defects[j][0];
+                        vector<Point> palmPoints;
+                        Point roughPalmCenter;
+                        
+                        for(int j = 0; j < defects.size(); j++) {
+                            int startidx = defects[j][0];
                             Point ptStart(currentCountour[0][startidx]);
                             
-                            int endidx=defects[j][1];
+                            int endidx = defects[j][1];
                             Point ptEnd(currentCountour[0][endidx]);
                             
-                            int faridx=defects[j][2];
+                            int faridx = defects[j][2];
                             Point ptFar(currentCountour[0][faridx]);
                             
                             // Sum up all the hull and defect points to compute average
-                            rough_palm_center += ptFar + ptStart + ptEnd;
-                            palm_points.push_back(ptFar);
-                            palm_points.push_back(ptStart);
-                            palm_points.push_back(ptEnd);
+                            roughPalmCenter += ptFar + ptStart + ptEnd;
+                            palmPoints.push_back(ptFar);
+                            palmPoints.push_back(ptStart);
+                            palmPoints.push_back(ptEnd);
                         }
                         
                         // Get palm center by 1st getting the average of all defect points, this is the rough palm center,
                         // Then U chose the closest 3 points ang get the circle radius and center formed from them which is the palm center.
-                        rough_palm_center.x /= defects.size()*3;
-                        rough_palm_center.y /= defects.size()*3;
-                        Point closest_pt=palm_points[0];
+                        roughPalmCenter.x /= defects.size()*3;
+                        roughPalmCenter.y /= defects.size()*3;
+                        Point closest_pt = palmPoints[0];
                         vector<pair<double,int>> distvec;
-                        for(int i = 0; i < palm_points.size(); i++)
-                            distvec.push_back(make_pair(euclideanDistance(rough_palm_center, palm_points[i]), i));
+                        for(int i = 0; i < palmPoints.size(); i++)
+                            distvec.push_back(make_pair(euclideanDistance(roughPalmCenter, palmPoints[i]), i));
                         sort(distvec.begin(), distvec.end());
                         
                         // Keep choosing 3 points till you find a circle with a valid radius
                         // As there is a high chance that the closes points might be in a linear line or too close that it forms a very large circle
                         pair<Point,double> soln_circle;
                         for(int i = 0; i + 2 < distvec.size(); i++) {
-                            Point p1=palm_points[distvec[i+0].second];
-                            Point p2=palm_points[distvec[i+1].second];
-                            Point p3=palm_points[distvec[i+2].second];
+                            Point p1=palmPoints[distvec[i+0].second];
+                            Point p2=palmPoints[distvec[i+1].second];
+                            Point p3=palmPoints[distvec[i+2].second];
                             soln_circle = circleFromPoints(p1, p2, p3); //Final palm center,radius
                             if(soln_circle.second!=0) break;
                         }
