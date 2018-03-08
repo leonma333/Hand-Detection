@@ -15,7 +15,6 @@ const int CONTOUR_MIN_AREA_SIZE = 5000;
 Mat currentFrame;
 Mat backgroundImage;
 Mat foregroundImage;
-vector<pair<Point, double>> palmCenters;
 Ptr<BackgroundSubtractorMOG2> backgroundSubtractor;
 
 void backgroundSubtractorSetup() {
@@ -76,6 +75,35 @@ void drawRectEnclosingHand(Mat contour) {
         line(currentFrame, rectPoints[i], rectPoints[(i+1)%4], Scalar(255, 0, 0), 1, 8);
 }
 
+void calculatePalmPointsAndCenter(vector<vector<Point>> contour, vector<Vec4i> defects, vector<Point> &palmPoints, Point &palmCenter) {
+    for (int i = 0; i < defects.size(); i++) {
+        int startidx = defects[i][0];
+        Point ptStart(contour[0][startidx]);
+        
+        int endidx = defects[i][1];
+        Point ptEnd(contour[0][endidx]);
+        
+        int faridx = defects[i][2];
+        Point ptFar(contour[0][faridx]);
+        
+        palmCenter += ptFar + ptStart + ptEnd;
+        palmPoints.push_back(ptFar);
+        palmPoints.push_back(ptStart);
+        palmPoints.push_back(ptEnd);
+    }
+    
+    palmCenter.x /= defects.size()*3;
+    palmCenter.y /= defects.size()*3;
+}
+
+    vector<pair<double,int>> getDistanceVector(vector<Point> palmPoints, Point palmCenter) {
+        vector<pair<double,int>> distvec;
+        for(int i = 0; i < palmPoints.size(); i++)
+            distvec.push_back(make_pair(euclideanDistance(palmCenter, palmPoints[i]), i));
+        sort(distvec.begin(), distvec.end());
+        return distvec;
+    }
+
 /* ------------------------------- */
 
 int main(int argc, char *argv[]) {
@@ -84,6 +112,8 @@ int main(int argc, char *argv[]) {
     VideoCapture cap(0);
     backgroundSubtractorSetup();
     createWindowsToDisplayFramesAndBackground();
+    
+    vector<pair<Point, double>> palmCenters;
     
     for(;;) {
         cap >> currentFrame;
@@ -108,47 +138,23 @@ int main(int argc, char *argv[]) {
                     if(defects.size() >= 3) {
                         vector<Point> palmPoints;
                         Point roughPalmCenter;
+                        calculatePalmPointsAndCenter(currentCountour, defects, palmPoints, roughPalmCenter);
                         
-                        for(int j = 0; j < defects.size(); j++) {
-                            int startidx = defects[j][0];
-                            Point ptStart(currentCountour[0][startidx]);
-                            
-                            int endidx = defects[j][1];
-                            Point ptEnd(currentCountour[0][endidx]);
-                            
-                            int faridx = defects[j][2];
-                            Point ptFar(currentCountour[0][faridx]);
-                            
-                            // Sum up all the hull and defect points to compute average
-                            roughPalmCenter += ptFar + ptStart + ptEnd;
-                            palmPoints.push_back(ptFar);
-                            palmPoints.push_back(ptStart);
-                            palmPoints.push_back(ptEnd);
-                        }
-                        
-                        // Get palm center by 1st getting the average of all defect points, this is the rough palm center,
-                        // Then U chose the closest 3 points ang get the circle radius and center formed from them which is the palm center.
-                        roughPalmCenter.x /= defects.size()*3;
-                        roughPalmCenter.y /= defects.size()*3;
-                        Point closest_pt = palmPoints[0];
-                        vector<pair<double,int>> distvec;
-                        for(int i = 0; i < palmPoints.size(); i++)
-                            distvec.push_back(make_pair(euclideanDistance(roughPalmCenter, palmPoints[i]), i));
-                        sort(distvec.begin(), distvec.end());
+                        vector<pair<double,int>> distvec = getDistanceVector(palmPoints, roughPalmCenter);
                         
                         // Keep choosing 3 points till you find a circle with a valid radius
                         // As there is a high chance that the closes points might be in a linear line or too close that it forms a very large circle
-                        pair<Point,double> soln_circle;
+                        pair<Point,double> solnCircle;
                         for(int i = 0; i + 2 < distvec.size(); i++) {
-                            Point p1=palmPoints[distvec[i+0].second];
-                            Point p2=palmPoints[distvec[i+1].second];
-                            Point p3=palmPoints[distvec[i+2].second];
-                            soln_circle = circleFromPoints(p1, p2, p3); //Final palm center,radius
-                            if(soln_circle.second!=0) break;
+                            Point p1 = palmPoints[distvec[i+0].second];
+                            Point p2 = palmPoints[distvec[i+1].second];
+                            Point p3 = palmPoints[distvec[i+2].second];
+                            solnCircle = circleFromPoints(p1, p2, p3); //Final palm center,radius
+                            if(solnCircle.second!=0) break;
                         }
                         
                         // Find avg palm centers for the last few frames to stabilize its centers, also find the avg radius
-                        palmCenters.push_back(soln_circle);
+                        palmCenters.push_back(solnCircle);
                         if(palmCenters.size() > 10)
                             palmCenters.erase(palmCenters.begin());
                         

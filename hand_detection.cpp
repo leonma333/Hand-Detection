@@ -1,5 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
+//#include "point_calculator.h"
 
 using namespace cv;
 using namespace std;
@@ -11,12 +12,14 @@ public:
     const int BACKGROUND_LEARNING_TIMES = 500;
     const int CONTOUR_MIN_AREA_SIZE = 5000;
     
-    void record() {
+    void start() {
         int backgroundLearningTimes = BACKGROUND_LEARNING_TIMES;
         
         VideoCapture cap(0);
         backgroundSubtractorSetup();
         createWindowsToDisplayFramesAndBackground();
+        
+        vector<pair<Point, double>> palmCenters;
         
         for (;;) {
             cap >> currentFrame;
@@ -36,6 +39,14 @@ public:
                         
                         vector<Vec4i> defects;
                         convexityDefects(currentCountour[0], hullsI[0], defects);
+                        
+                        if(defects.size() >= 3) {
+                            vector<Point> palmPoints;
+                            Point roughPalmCenter;
+                            calculatePalmPointsAndCenter(currentCountour, defects, palmPoints, roughPalmCenter);
+                            
+                            //vector<pair<double,int>> distvec = getDistanceVector(palmPoints, roughPalmCenter);
+                        }
                     }
                 }
             }
@@ -47,7 +58,6 @@ private:
     Mat currentFrame;
     Mat backgroundImage;
     Mat foregroundImage;
-    vector<pair<Point, double>> palmCenters;
     Ptr<BackgroundSubtractorMOG2> backgroundSubtractor;
     
     void backgroundSubtractorSetup() {
@@ -107,5 +117,34 @@ private:
         for(int i = 0; i < 4; i++)
             line(currentFrame, rectPoints[i], rectPoints[(i+1)%4], Scalar(255, 0, 0), 1, 8);
     }
+    
+    void calculatePalmPointsAndCenter(vector<vector<Point>> contour, vector<Vec4i> defects, vector<Point> &palmPoints, Point &palmCenter) {
+        for (int i = 0; i < defects.size(); i++) {
+            int startidx = defects[i][0];
+            Point ptStart(contour[0][startidx]);
+            
+            int endidx = defects[i][1];
+            Point ptEnd(contour[0][endidx]);
+            
+            int faridx = defects[i][2];
+            Point ptFar(contour[0][faridx]);
+            
+            palmCenter += ptFar + ptStart + ptEnd;
+            palmPoints.push_back(ptFar);
+            palmPoints.push_back(ptStart);
+            palmPoints.push_back(ptEnd);
+        }
+        
+        palmCenter.x /= defects.size()*3;
+        palmCenter.y /= defects.size()*3;
+    }
+    
+//    vector<pair<double,int>> getDistanceVector(vector<Point> palmPoints, Point palmCenter) {
+//        vector<pair<double,int>> distvec;
+//        for(int i = 0; i < palmPoints.size(); i++)
+//            distvec.push_back(make_pair(euclideanDistance(palmCenter, palmPoints[i]), i));
+//        sort(distvec.begin(), distvec.end());
+//        return distvec;
+//    }
     
 };
