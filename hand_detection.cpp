@@ -45,7 +45,8 @@ public:
                             Point roughPalmCenter;
                             calculatePalmPointsAndCenter(currentCountour, defects, palmPoints, roughPalmCenter);
                             
-                            //vector<pair<double,int>> distvec = getDistanceVector(palmPoints, roughPalmCenter);
+                            // vector<pair<double,int>> distvec = getDistanceVector(palmPoints, roughPalmCenter);
+                            // pair<Point,double> solnCircle = getCircle(distvec, palmPoints);
                         }
                     }
                 }
@@ -145,6 +146,18 @@ private:
 //            distvec.push_back(make_pair(euclideanDistance(palmCenter, palmPoints[i]), i));
 //        sort(distvec.begin(), distvec.end());
 //        return distvec;
+//    }
+    
+//    pair<Point, double> getCircle(vector<pair<double,int>> distvec, vector<Point> points) {
+//        pair<Point,double> circle;
+//        for(int i = 0; i + 2 < distvec.size(); i++) {
+//            Point p1 = points[distvec[i+0].second];
+//            Point p2 = points[distvec[i+1].second];
+//            Point p3 = points[distvec[i+2].second];
+//            circle = circleFromPoints(p1, p2, p3);
+//            if(circle.second != 0) break;
+//        }
+//        return circle;
 //    }
     
 };

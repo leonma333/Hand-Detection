@@ -91,18 +91,29 @@ void calculatePalmPointsAndCenter(vector<vector<Point>> contour, vector<Vec4i> d
         palmPoints.push_back(ptStart);
         palmPoints.push_back(ptEnd);
     }
-    
     palmCenter.x /= defects.size()*3;
     palmCenter.y /= defects.size()*3;
 }
 
-    vector<pair<double,int>> getDistanceVector(vector<Point> palmPoints, Point palmCenter) {
-        vector<pair<double,int>> distvec;
-        for(int i = 0; i < palmPoints.size(); i++)
-            distvec.push_back(make_pair(euclideanDistance(palmCenter, palmPoints[i]), i));
-        sort(distvec.begin(), distvec.end());
-        return distvec;
+vector<pair<double,int>> getDistanceVector(vector<Point> palmPoints, Point palmCenter) {
+    vector<pair<double,int>> distvec;
+    for(int i = 0; i < palmPoints.size(); i++)
+        distvec.push_back(make_pair(euclideanDistance(palmCenter, palmPoints[i]), i));
+    sort(distvec.begin(), distvec.end());
+    return distvec;
+}
+
+pair<Point, double> getCircle(vector<pair<double,int>> distvec, vector<Point> points) {
+    pair<Point,double> circle;
+    for(int i = 0; i + 2 < distvec.size(); i++) {
+        Point p1 = points[distvec[i+0].second];
+        Point p2 = points[distvec[i+1].second];
+        Point p3 = points[distvec[i+2].second];
+        circle = circleFromPoints(p1, p2, p3);
+        if(circle.second != 0) break;
     }
+    return circle;
+}
 
 /* ------------------------------- */
 
@@ -141,17 +152,7 @@ int main(int argc, char *argv[]) {
                         calculatePalmPointsAndCenter(currentCountour, defects, palmPoints, roughPalmCenter);
                         
                         vector<pair<double,int>> distvec = getDistanceVector(palmPoints, roughPalmCenter);
-                        
-                        // Keep choosing 3 points till you find a circle with a valid radius
-                        // As there is a high chance that the closes points might be in a linear line or too close that it forms a very large circle
-                        pair<Point,double> solnCircle;
-                        for(int i = 0; i + 2 < distvec.size(); i++) {
-                            Point p1 = palmPoints[distvec[i+0].second];
-                            Point p2 = palmPoints[distvec[i+1].second];
-                            Point p3 = palmPoints[distvec[i+2].second];
-                            solnCircle = circleFromPoints(p1, p2, p3); //Final palm center,radius
-                            if(solnCircle.second!=0) break;
-                        }
+                        pair<Point,double> solnCircle = getCircle(distvec, palmPoints);
                         
                         // Find avg palm centers for the last few frames to stabilize its centers, also find the avg radius
                         palmCenters.push_back(solnCircle);
