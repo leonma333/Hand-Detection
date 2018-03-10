@@ -115,6 +115,25 @@ pair<Point, double> getCircle(vector<pair<double,int>> distvec, vector<Point> po
     return circle;
 }
 
+void updatePalmCenters(vector<pair<Point,double>> &centers, pair<Point,double> circle) {
+    centers.push_back(circle);
+    if(centers.size() > 10)
+        centers.erase(centers.begin());
+}
+
+void drawPalmCircle(vector<pair<Point, double>> centers, Point &center, double &radius) {
+    for (int i = 0; i < centers.size(); i++) {
+        center += centers[i].first;
+        radius += centers[i].second;
+    }
+    center.x /= centers.size();
+    center.y /= centers.size();
+    radius /= centers.size();
+
+    circle(currentFrame, center, 5, Scalar(144,144,255), 3);
+    circle(currentFrame, center, radius, Scalar(144,144,255), 2);
+}
+
 /* ------------------------------- */
 
 int main(int argc, char *argv[]) {
@@ -154,25 +173,11 @@ int main(int argc, char *argv[]) {
                         vector<pair<double,int>> distvec = getDistanceVector(palmPoints, roughPalmCenter);
                         pair<Point,double> solnCircle = getCircle(distvec, palmPoints);
                         
-                        // Find avg palm centers for the last few frames to stabilize its centers, also find the avg radius
-                        palmCenters.push_back(solnCircle);
-                        if(palmCenters.size() > 10)
-                            palmCenters.erase(palmCenters.begin());
+                        updatePalmCenters(palmCenters, solnCircle);
                         
-                        Point palm_center;
+                        Point palmCenter;
                         double radius = 0;
-                        for(int i = 0; i < palmCenters.size(); i++) {
-                            palm_center+=palmCenters[i].first;
-                            radius+=palmCenters[i].second;
-                        }
-                        palm_center.x /= palmCenters.size();
-                        palm_center.y /= palmCenters.size();
-                        radius /= palmCenters.size();
-                        
-                        // Draw the palm center and the palm circle
-                        // The size of the palm gives the depth of the hand
-                        circle(currentFrame, palm_center, 5, Scalar(144,144,255), 3);
-                        circle(currentFrame, palm_center, radius, Scalar(144,144,255), 2);
+                        drawPalmCircle(palmCenters, palmCenter, radius);
                         
                         // Detect fingers by finding points that form an almost isosceles triangle with certain thesholds
                         int num_of_fingers = 0;
@@ -188,8 +193,8 @@ int main(int argc, char *argv[]) {
                             
                             // X o--------------------------o Y
                             
-                            double Xdist = sqrt(euclideanDistance(palm_center,ptFar));
-                            double Ydist = sqrt(euclideanDistance(palm_center,ptStart));
+                            double Xdist = sqrt(euclideanDistance(palmCenter,ptFar));
+                            double Ydist = sqrt(euclideanDistance(palmCenter,ptStart));
                             double length = sqrt(euclideanDistance(ptFar,ptStart));
                             double retLength = sqrt(euclideanDistance(ptEnd,ptFar));
                             

@@ -1,6 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
-//#include "point_calculator.h"
+// #include "point_calculator.h"
 
 using namespace cv;
 using namespace std;
@@ -40,13 +40,19 @@ public:
                         vector<Vec4i> defects;
                         convexityDefects(currentCountour[0], hullsI[0], defects);
                         
-                        if(defects.size() >= 3) {
+                        if (defects.size() >= 3) {
                             vector<Point> palmPoints;
                             Point roughPalmCenter;
                             calculatePalmPointsAndCenter(currentCountour, defects, palmPoints, roughPalmCenter);
                             
-                            // vector<pair<double,int>> distvec = getDistanceVector(palmPoints, roughPalmCenter);
-                            // pair<Point,double> solnCircle = getCircle(distvec, palmPoints);
+//                            vector<pair<double,int>> distvec = getDistanceVector(palmPoints, roughPalmCenter);
+//                            pair<Point,double> solnCircle = getCircle(distvec, palmPoints);
+//
+//                            updatePalmCenters(palmCenters, solnCircle);
+//
+//                            Point palmCenter;
+//                            double radius = 0;
+//                            drawPalmCircle(palmCenters, palmCenter, radius);
                         }
                     }
                 }
@@ -147,7 +153,7 @@ private:
 //        sort(distvec.begin(), distvec.end());
 //        return distvec;
 //    }
-    
+//
 //    pair<Point, double> getCircle(vector<pair<double,int>> distvec, vector<Point> points) {
 //        pair<Point,double> circle;
 //        for(int i = 0; i + 2 < distvec.size(); i++) {
@@ -158,6 +164,25 @@ private:
 //            if(circle.second != 0) break;
 //        }
 //        return circle;
+//    }
+//
+//    void updatePalmCenters(vector<pair<Point,double>> &centers, pair<Point,double> circle) {
+//        centers.push_back(circle);
+//        if(centers.size() > 10)
+//            centers.erase(centers.begin());
+//    }
+//
+//    void drawPalmCircle(vector<pair<Point, double>> centers, Point &center, double &radius) {
+//        for (int i = 0; i < centers.size(); i++) {
+//            center += centers[i].first;
+//            radius += centers[i].second;
+//        }
+//        center.x /= centers.size();
+//        center.y /= centers.size();
+//        radius /= centers.size();
+//
+//        circle(currentFrame, center, 5, Scalar(144,144,255), 3);
+//        circle(currentFrame, center, radius, Scalar(144,144,255), 2);
 //    }
     
 };
