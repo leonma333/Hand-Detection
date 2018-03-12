@@ -53,6 +53,8 @@ public:
 //                            Point palmCenter;
 //                            double radius = 0;
 //                            drawPalmCircle(palmCenters, palmCenter, radius);
+//
+//                             cout << "NO OF FINGERS: " << numberOfFingers(defects, currentCountour[0], palmCenter, radius) << endl;
                         }
                     }
                 }
@@ -183,6 +185,44 @@ private:
 //
 //        circle(currentFrame, center, 5, Scalar(144,144,255), 3);
 //        circle(currentFrame, center, radius, Scalar(144,144,255), 2);
+//    }
+//
+//    bool isFinger(double length, double distY, double distX, double retLength, double radius, Point ptEnd, Point ptFar) {
+//        if (length <= 3*radius && distY >= 0.4*radius && length >= 10 && retLength >= 10 && max(length, retLength)/min(length, retLength) >= 0.8) {
+//            if (min(distX,distY)/max(distX,distY) <= 0.8) {
+//                if ((distX >= 0.1*radius && distX <= 1.3*radius && distX < distY) || (distY >= 0.1*radius && distY <= 1.3*radius && distX > distY)) {
+//                    line(currentFrame, ptEnd, ptFar, Scalar(0,255,0), 1);
+//                    return true;
+//                }
+//            }
+//        }
+//        return false;
+//    }
+//
+//    int numberOfFingers(vector<Vec4i> defects, vector<Point> pointvec, Point palmCenter, double radius) {
+//        int numOfFingers = 0;
+//        for (int i = 0; i < defects.size(); i++) {
+//            int startidx = defects[i][0];
+//            Point ptStart(pointvec[startidx]);
+//
+//            int endidx = defects[i][1];
+//            Point ptEnd(pointvec[endidx]);
+//
+//            int faridx = defects[i][2];
+//            Point ptFar(pointvec[faridx]);
+//
+//            double distX = sqrt(euclideanDistance(palmCenter, ptFar));
+//            double distY = sqrt(euclideanDistance(palmCenter, ptStart));
+//            double length = sqrt(euclideanDistance(ptFar, ptStart));
+//            double retLength = sqrt(euclideanDistance(ptEnd, ptFar));
+//
+//            if (isFinger(length, distY, distX, retLength, radius, ptEnd, ptFar)) {
+//                line(currentFrame, ptEnd, ptFar, Scalar(0,255,0), 1);
+//                numOfFingers++;
+//            }
+//        }
+//        numOfFingers = min(5, numOfFingers);
+//        return numOfFingers;
 //    }
     
 };
