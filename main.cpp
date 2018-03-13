@@ -172,6 +172,13 @@ int numberOfFingers(vector<Vec4i> defects, vector<Point> pointvec, Point palmCen
     return numOfFingers;
 }
 
+void showFrame(int learningTimes) {
+    if(learningTimes > 0)
+        putText(currentFrame, "Recording Background", cvPoint(30,30), FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200,200,250), 1, CV_AA);
+    imshow("Frame",currentFrame);
+    imshow("Background", backgroundImage);
+}
+
 /* ------------------------------- */
 
 int main(int argc, char *argv[]) {
@@ -223,10 +230,7 @@ int main(int argc, char *argv[]) {
             }
         }
         
-        if(backgroundLearningTimes > 0)
-            putText(currentFrame, "Recording Background", cvPoint(30,30), FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200,200,250), 1, CV_AA);
-        imshow("Frame",currentFrame);
-        imshow("Background", backgroundImage);
+        showFrame(backgroundLearningTimes);
         
         if (waitKey(10) >= 0) break;
     }

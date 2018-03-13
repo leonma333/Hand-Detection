@@ -23,6 +23,7 @@ public:
         
         for (;;) {
             cap >> currentFrame;
+            
             updateBackgroundLearning(backgroundLearningTimes);
             refreshBackgroundImage();
             enhanceForegroundImage();
@@ -59,6 +60,8 @@ public:
                     }
                 }
             }
+            
+            showFrame(backgroundLearningTimes);
         }
     }
 
@@ -224,5 +227,12 @@ private:
 //        numOfFingers = min(5, numOfFingers);
 //        return numOfFingers;
 //    }
+    
+    void showFrame(int learningTimes) {
+        if(learningTimes > 0)
+            putText(currentFrame, "Recording Background", cvPoint(30,30), FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200,200,250), 1, CV_AA);
+        imshow("Frame",currentFrame);
+        imshow("Background", backgroundImage);
+    }
     
 };
