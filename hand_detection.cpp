@@ -31,37 +31,12 @@ public:
             vector<vector<Point>> allContours = findContoursFromForeground();
             
             for (int i = 0; i < allContours.size(); i++) {
-                if(contourArea(allContours[i]) >= CONTOUR_MIN_AREA_SIZE) {
-                    vector<vector<Point>> currentCountour = drawHandOutline(allContours[i]);
-                    vector<vector<int>> hullsI = drawHulls(currentCountour[0]);
-                    
-                    if (hullsI[0].size() > 0) {
-                        drawRectEnclosingHand(Mat(currentCountour[0]));
-                        
-                        vector<Vec4i> defects;
-                        convexityDefects(currentCountour[0], hullsI[0], defects);
-                        
-                        if (defects.size() >= 3) {
-                            vector<Point> palmPoints;
-                            Point roughPalmCenter;
-                            calculatePalmPointsAndCenter(currentCountour, defects, palmPoints, roughPalmCenter);
-                            
-//                            vector<pair<double,int>> distvec = getDistanceVector(palmPoints, roughPalmCenter);
-//                            pair<Point,double> solnCircle = getCircle(distvec, palmPoints);
-//
-//                            updatePalmCenters(palmCenters, solnCircle);
-//
-//                            Point palmCenter;
-//                            double radius = 0;
-//                            drawPalmCircle(palmCenters, palmCenter, radius);
-//
-//                             cout << "NO OF FINGERS: " << numberOfFingers(defects, currentCountour[0], palmCenter, radius) << endl;
-                        }
-                    }
-                }
+                // handDrawing(allContours[i], palmCenters);
             }
             
             showFrame(backgroundLearningTimes);
+            
+            if (waitKey(10) >= 0) break;
         }
     }
 
@@ -226,6 +201,37 @@ private:
 //        }
 //        numOfFingers = min(5, numOfFingers);
 //        return numOfFingers;
+//    }
+//
+//    void handDrawing(vector<Point> pointvec, vector<pair<Point, double>> centers) {
+//        if (contourArea(pointvec) < CONTOUR_MIN_AREA_SIZE) return;
+//
+//        vector<vector<Point>> currentCountour = drawHandOutline(pointvec);
+//        vector<vector<int>> hullsI = drawHulls(currentCountour[0]);
+//
+//        if (hullsI[0].size() > 0) {
+//            drawRectEnclosingHand(Mat(currentCountour[0]));
+//
+//            vector<Vec4i> defects;
+//            convexityDefects(currentCountour[0], hullsI[0], defects);
+//
+//            if(defects.size() >= 3) {
+//                vector<Point> palmPoints;
+//                Point roughPalmCenter;
+//                calculatePalmPointsAndCenter(currentCountour, defects, palmPoints, roughPalmCenter);
+//
+//                vector<pair<double,int>> distvec = getDistanceVector(palmPoints, roughPalmCenter);
+//                pair<Point,double> solnCircle = getCircle(distvec, palmPoints);
+//
+//                updatePalmCenters(centers, solnCircle);
+//
+//                Point palmCenter;
+//                double radius = 0;
+//                drawPalmCircle(centers, palmCenter, radius);
+//
+//                cout << "NO OF FINGERS: " << numberOfFingers(defects, currentCountour[0], palmCenter, radius) << endl;
+//            }
+//        }
 //    }
     
     void showFrame(int learningTimes) {
