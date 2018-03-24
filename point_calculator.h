@@ -14,10 +14,8 @@ pair<Point, double> circleFromPoints(Point p1, Point p2, Point p3) {
     double det = (p1.x - p2.x) * (p2.y - p3.y) - (p2.x - p3.x)* (p1.y - p2.y);
     double TOL = 0.0000001;
     
-    if (abs(det) < TOL) {
-        cout << "POINTS TOO CLOSE" << endl;
+    if (abs(det) < TOL)
         return make_pair(Point(0, 0), 0);
-    }
     
     double idet = 1 / det;
     double centerx = (bc * (p2.y - p3.y) - cd * (p1.y - p2.y)) * idet;

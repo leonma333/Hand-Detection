@@ -1,5 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
+#include <mutex>
 #include "point_calculator.h"
 
 using namespace cv;
@@ -12,40 +13,160 @@ public:
     const static int BACKGROUND_LEARNING_TIMES = 500;
     const static int CONTOUR_MIN_AREA_SIZE = 5000;
     
+    HandDetection() {
+        init();
+    }
+    
+    void reset() {
+        if (running) return;
+        init();
+    }
+    
     void start() {
-        int backgroundLearningTimes = BACKGROUND_LEARNING_TIMES;
+//        backgroundSubtractorSetup();
+//        createWindowsToDisplayFramesAndBackground();
+//
+//        for(;;) {
+//            updateBackgroundLearning();
+//            refreshBackgroundImage();
+//            enhanceForegroundImage();
+//
+//            vector< vector<Point> > allContours = findContoursFromForeground();
+//
+//            for (int i = 0; i < allContours.size(); i++) {
+//                handDrawing(allContours[i], palmCenters);
+//            }
+//
+//            if (!running) break;
+//        }
         
-        VideoCapture cap(0);
-        backgroundSubtractorSetup();
-        createWindowsToDisplayFramesAndBackground();
-        
-        vector< pair<Point, double> > palmCenters;
-        
-        for(;;) {
-            cap >> currentFrame;
-            
-            updateBackgroundLearning(backgroundLearningTimes);
-            refreshBackgroundImage();
-            enhanceForegroundImage();
-            
-            vector< vector<Point> > allContours = findContoursFromForeground();
-            
-            for (int i = 0; i < allContours.size(); i++) {
-                handDrawing(allContours[i], palmCenters);
-            }
-            
-            showFrame(backgroundLearningTimes);
-            
-            if (waitKey(10) >= 0) break;
-        }
+        thread producer_t(&HandDetection::producer, this);
+        thread ui_t(&HandDetection::ui, this);
+        thread processor_t(&HandDetection::processor, this);
+        producer_t.join();
+    }
+    
+    void stop() {
+        mtx.lock();
+        running = false;
+        mtx.unlock();
+    }
+    
+    int getNumberOfFingersUp() {
+        return fingersNumber;
     }
     
 private:
+    
+    const static int BUFFER_LENGTH = 100;
+    
+    mutex mtx;
+    bool running;
+    int fingersNumber;
+    int backgroundLearningTimes;
+    vector< pair<Point, double> > palmCenters;
+    
+    int position;
+    int index;
+    Mat frameBuffer [BUFFER_LENGTH];
     
     Mat currentFrame;
     Mat backgroundImage;
     Mat foregroundImage;
     Ptr<BackgroundSubtractorMOG2> backgroundSubtractor;
+    
+    void init() {
+        running = false;
+        fingersNumber = 0;
+        backgroundLearningTimes = BACKGROUND_LEARNING_TIMES;
+        palmCenters.clear();
+        
+        position = 0;
+        index = 0;
+        
+        currentFrame = NULL;
+        backgroundImage = NULL;
+        foregroundImage = NULL;
+        backgroundSubtractor.release();
+    }
+    
+    /* =============================
+       Producer thread
+       ============================= */
+    void producer() {
+        VideoCapture cap(0);
+        Mat f;
+        
+        backgroundSubtractorSetup();
+        createWindowsToDisplayFramesAndBackground();
+        
+        while(1) {
+            cap >> f;
+            putFrameInBuffer(f);
+            if (!running) break;
+        }
+    }
+    
+    void putFrameInBuffer(Mat &f){
+        position = index % BUFFER_LENGTH;
+        frameBuffer[position] = f.clone();
+        index++;
+    }
+    
+    /* =============================
+     UI thread
+     ============================= */
+    
+    void ui(){
+        while(1) {
+            if (currentFrame.empty()) continue;
+            showFrame();
+            waitKey(20);
+        }
+    }
+    
+    void showFrame(){
+        if(backgroundLearningTimes > 0)
+            putText(currentFrame, "Recording Background", cvPoint(30,30), FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200,200,250), 1, CV_AA);
+        imshow("Frame", currentFrame);
+        imshow("Background", backgroundImage);
+    }
+    
+    /* =============================
+     Processing thread
+     ============================= */
+    
+    void processor() {
+        while(1) {
+            getCurrentFrame();
+            if (currentFrame.empty()) continue;
+            processCurrentFrame();
+        }
+    }
+    
+    void processCurrentFrame() {
+        updateBackgroundLearning();
+        refreshBackgroundImage();
+        enhanceForegroundImage();
+        
+        vector< vector<Point> > allContours = findContoursFromForeground();
+        
+        for (int i = 0; i < allContours.size(); i++) {
+            handDrawing(allContours[i], palmCenters);
+        }
+    }
+    
+    void getCurrentFrame(){
+        int end = position;
+        
+        mtx.lock();
+        currentFrame = frameBuffer[end];
+        mtx.unlock();
+    }
+    
+    /* =============================
+     Helpers
+     ============================= */
     
     void backgroundSubtractorSetup() {
         backgroundSubtractor = createBackgroundSubtractorMOG2();
@@ -58,10 +179,10 @@ private:
         namedWindow("Background");
     }
     
-    void updateBackgroundLearning(int &learningTimes) {
-        if(learningTimes > 0) {
+    void updateBackgroundLearning() {
+        if (backgroundLearningTimes > 0) {
             backgroundSubtractor->apply(currentFrame, foregroundImage);
-            learningTimes--;
+            backgroundLearningTimes--;
         } else
             backgroundSubtractor->apply(currentFrame, foregroundImage, 0);
     }
@@ -198,8 +319,10 @@ private:
                 numOfFingers++;
             }
         }
-        numOfFingers = min(5, numOfFingers);
-        return numOfFingers;
+        mtx.lock();
+        fingersNumber = min(5, numOfFingers);
+        mtx.unlock();
+        return fingersNumber;
     }
     
     void handDrawing(vector<Point> pointvec, vector< pair<Point, double> > centers) {
@@ -233,12 +356,4 @@ private:
         }
     }
     
-    void showFrame(int learningTimes) {
-        if(learningTimes > 0)
-            putText(currentFrame, "Recording Background", cvPoint(30,30), FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200,200,250), 1, CV_AA);
-        imshow("Frame",currentFrame);
-        imshow("Background", backgroundImage);
-    }
-    
 };
-
