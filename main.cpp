@@ -9,11 +9,11 @@ int main(int argc, char *argv[]) {
     thread t(&HandDetection::start, &handDetector);
     
     namedWindow("Frame");
-    namedWindow("Background");
+    namedWindow("Foreground");
     
     while(1) {
         imshow("Frame", handDetector.getFrame());
-        imshow("Background", handDetector.getBackground());
+        imshow("Foreground", handDetector.getForeground());
         if (waitKey(10) >= 0) {
             handDetector.stop();
             break;
