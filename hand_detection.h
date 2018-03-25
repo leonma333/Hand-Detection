@@ -1,5 +1,7 @@
 #include <opencv2/opencv.hpp>
+#include <mutex>
 #include <vector>
+#include <unistd.h>
 #include "point_calculator.h"
 
 using namespace cv;
@@ -12,7 +14,17 @@ public:
     const static int BACKGROUND_LEARNING_TIMES = 500;
     const static int CONTOUR_MIN_AREA_SIZE = 5000;
     
+    HandDetection() {
+        running = false;
+        
+        Mat black(320, 240, CV_8UC3, Scalar(0,0,0));
+        frame = black;
+        background = black;
+        foreground = black;
+    }
+    
     void start() {
+        running = true;
         int backgroundLearningTimes = BACKGROUND_LEARNING_TIMES;
         
         VideoCapture cap(0);
@@ -34,13 +46,47 @@ public:
                 handDrawing(allContours[i], palmCenters);
             }
             
-            showFrame(backgroundLearningTimes);
+            drawFrame(backgroundLearningTimes);
             
-            if (waitKey(10) >= 0) break;
+            mtx.lock();
+            frame = currentFrame;
+            background = backgroundImage;
+            foreground = foregroundImage;
+            mtx.unlock();
+            
+            if (!running) break;
+            
+            usleep(10 * 1000);
         }
     }
     
+    void stop() {
+        running = false;
+    }
+    
+    Mat getFrame() {
+        mtx.lock();
+        Mat frameCopy = frame;
+        mtx.unlock();
+        return frame;
+    }
+    
+    Mat getBackground() {
+        return background;
+    }
+    
+    Mat getForeground() {
+        return foreground;
+    }
+    
 private:
+    
+    mutex mtx;
+    bool running;
+    
+    Mat frame;
+    Mat background;
+    Mat foreground;
     
     Mat currentFrame;
     Mat backgroundImage;
@@ -233,12 +279,9 @@ private:
         }
     }
     
-    void showFrame(int learningTimes) {
+    void drawFrame(int learningTimes) {
         if(learningTimes > 0)
             putText(currentFrame, "Recording Background", cvPoint(30,30), FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200,200,250), 1, CV_AA);
-        imshow("Frame",currentFrame);
-        imshow("Background", backgroundImage);
     }
     
 };
-
