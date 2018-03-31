@@ -12,8 +12,11 @@ class HandDetection {
     
 public:
     
-    const static int BACKGROUND_LEARNING_TIMES = 500;
-    const static int CONTOUR_MIN_AREA_SIZE = 5000;
+    const string RIGHT = "RIGHT";
+    const string LEFT = "LEFT";
+    const string UP = "UP";
+    const string DOWN = "DOWN";
+    const string NOT_MOVING = "IDLE";
     
     HandDetection() {
         running = false;
@@ -47,7 +50,9 @@ public:
                 handDrawing(frame, allContours[i], palmCenters);
             }
             
+            #if defined TEST
             drawFrame(frame, backgroundLearningTimes);
+            #endif
             
             mtx.lock();
             currentFrame = frame;
@@ -55,7 +60,10 @@ public:
             foreground = foregroundImage;
             mtx.unlock();
             
-            if (!running) break;
+            if (!running) {
+                cap.release();
+                break;
+            }
             
             usleep(10 * 1000);
         }
@@ -81,10 +89,20 @@ public:
         return fingers;
     }
     
+    string getDirection() {
+        return direction;
+    }
+    
 private:
+    
+    const static int BACKGROUND_LEARNING_TIMES = 500;
+    const static int CONTOUR_MIN_AREA_SIZE = 5000;
+    const static int MIN_HORIZONTAL_DIST = 500;
+    const static int MIN_VERTICAL_DIST = 400;
     
     int fingers;
     bool running;
+    string direction;
     
     mutex mtx;
     Mat currentFrame;
@@ -194,7 +212,24 @@ private:
             centers.erase(centers.begin());
     }
     
-    void drawPalmCircle(Mat frame, vector<pair< Point, double> > centers, Point &center, double &radius) {
+    string calculateMovingDirection(Point start, Point end) {
+        string movement = NOT_MOVING;
+        int distanceX = end.x - start.x;
+        int distanceY = end.y - start.y;
+        
+        if (abs(distanceX)  > MIN_HORIZONTAL_DIST)
+            movement = distanceX > 0 ? RIGHT : LEFT;
+        else if (abs(distanceY) > MIN_VERTICAL_DIST)
+            movement = distanceY > 0 ? DOWN : UP;
+        
+        mtx.lock();
+        direction = movement;
+        mtx.unlock();
+        
+        return movement;
+    }
+    
+    void drawPalmCircle(Mat frame, vector< pair<Point, double> > centers, Point &center, double &radius) {
         for (int i = 0; i < centers.size(); i++) {
             center += centers[i].first;
             radius += centers[i].second;
@@ -272,15 +307,17 @@ private:
                 double radius = 0;
                 drawPalmCircle(frame, centers, palmCenter, radius);
                 
+                calculateMovingDirection(centers[0].first, centers[9].first);
                 calculateNumberOfFingers(frame, defects, currentCountour[0], palmCenter, radius);
             }
         }
     }
     
     void drawFrame(Mat frame, int learningTimes) {
-        if (learningTimes <= 0) return;
-        putText(frame, "Recording Background", cvPoint(30,30), FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200,200,250), 1, CV_AA);
+        if (learningTimes > 0)
+            putText(frame, "Recording Background", cvPoint(30,30), FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200,200,250), 1, CV_AA);
         putText(frame, "Number of Fingers: " + to_string(fingers), cvPoint(30,50), FONT_HERSHEY_COMPLEX_SMALL, 0.5, cvScalar(200,200,250), 1, CV_AA);
+        putText(frame, "Moving Direction: " + direction, cvPoint(30,70), FONT_HERSHEY_COMPLEX_SMALL, 0.5, cvScalar(200,200,250), 1, CV_AA);
     }
     
 };

@@ -15,7 +15,6 @@ pair<Point, double> circleFromPoints(Point p1, Point p2, Point p3) {
     double TOL = 0.0000001;
     
     if (abs(det) < TOL) {
-        cout << "POINTS TOO CLOSE" << endl;
         return make_pair(Point(0, 0), 0);
     }
     
