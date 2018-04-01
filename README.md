@@ -1,8 +1,8 @@
 # Hand-Detection
 
-<img alt="opencv" src="https://qph.fs.quoracdn.net/main-qimg-748316a749bdb46f5cdbe02e976e5500" height="40"> <img alt="c++" src="https://raw.githubusercontent.com/isocpp/logos/master/cpp_logo.png" height="40">
+<img alt="opencv" src="https://qph.fs.quoracdn.net/main-qimg-748316a749bdb46f5cdbe02e976e5500" height="40" hspace="10"> <img alt="c++" src="https://raw.githubusercontent.com/isocpp/logos/master/cpp_logo.png" height="40" hspace="10"> <img alt="mit license" src="https://pre00.deviantart.net/4938/th/pre/f/2016/070/3/b/mit_license_logo_by_excaliburzero-d9ur2lg.png" height="40" hspace="10">
 
-HandDetection is a light weighted C++ library to track hands using [OpenCV](https://opencv.org/).
+**HandDetection** is a light weighted C++ library to track hands using [OpenCV](https://opencv.org/).
 
 ## Requriments
 
@@ -17,6 +17,8 @@ Current Frame                                             |Foreground Frame
 ![hand detection frame](https://i.imgur.com/TsJ9fsR.jpg)  |  ![hand detection foreground](https://i.imgur.com/BwoV6Oe.jpg)
 
 With clear and clean foreground images, accurate analysis can be done. For example, finger tip locations, palm center, movement, etc, endless things can be acheived.
+
+Compare to pure skin color detection, it is more adaptable, as it does not need to be calibrated to adapt to different skin colors and surrounding. Therefore, as long as the background is stationary, the background subtraction will always work like a charm.
 
 ## Features
 
@@ -67,3 +69,5 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 ```
+
+Enjoy ヽ(^o^)ノ
